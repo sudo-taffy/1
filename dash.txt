@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>REACH NG - WxDecode Dashboard</title>
+
+    <style>
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+        background-color: #f2f4f7; /* LIGHT GREY BACKGROUND */
+        color: #1a1a1a;
+      }
+
+      header {
+        padding: 20px;
+        text-align: center;
+        font-size: 22px;
+        font-weight: 600;
+        background-color: #e6e9ee;
+        border-bottom: 1px solid #d0d5dd;
+      }
+
+      .dashboard {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        padding: 30px;
+        max-width: 1200px;
+        margin: auto;
+      }
+
+      .card {
+        background-color: #e6e9ee; /* SLIGHTLY DARKER GREY */
+        border-radius: 16px;
+        padding: 20px;
+        min-height: 180px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        border: 1px solid #d0d5dd;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        transition: all 0.2s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .toggle-group {
+        display: flex;
+        border: 1px solid #d0d5dd;
+        border-radius: 6px;
+        overflow: hidden;
+        background: #f2f4f7;
+      }
+
+      .toggle-btn {
+        border: none;
+        padding: 4px 8px;
+        font-size: 10px;
+        cursor: pointer;
+        background: transparent;
+        color: #667085;
+        font-weight: 600;
+      }
+
+      .toggle-btn.active {
+        background-color: #667085;
+        color: white;
+      }
+
+      .delete-btn {
+        cursor: pointer;
+        color: #98a2b3;
+        font-size: 18px;
+      }
+
+      .horizon-select {
+        font-size: 10px;
+        border: 1px solid #d0d5dd;
+        border-radius: 4px;
+        background: white;
+        color: #667085;
+        outline: none;
+      }
+
+      .status-indicator {
+        position: absolute;
+        bottom: 12px;
+        right: 12px;
+        font-size: 24px;
+      }
+      .status-green {
+        color: #27ae60;
+      }
+      .status-orange {
+        color: #f39c12;
+      }
+      .status-red {
+        color: #e74c3c;
+      }
+
+      .airport {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .label {
+        font-size: 11px;
+        color: #667085;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+
+      .weather {
+        font-size: 13px;
+        line-height: 1.4;
+        font-family: monospace;
+        white-space: pre-line;
+      }
+
+      /* ADD CARD */
+      .add-card {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        background-color: #dfe3e8;
+      }
+
+      .add-card:hover {
+        background-color: #d0d5dd;
+      }
+
+      .plus {
+        font-size: 40px;
+        color: #667085;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>SkyNet Aviation — WxDecode Dashboard</header>
+
+    <div class="dashboard" id="dashboard">
+      <!-- Initial 6 Modules will be rendered via JS to manage state easily -->
+    </div>
+
+    <script>
+      const initialAirports = ["YBBN", "YSSY", "YMML", "YPPH", "NZAA", null];
+
+      function getSeverityClass(code) {
+        // Dummy logic to assign a color based on airport code
+        const hash = code
+          .split("")
+          .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const colors = ["status-green", "status-orange", "status-red"];
+        return colors[hash % 3];
+      }
+
+      function createWeatherContent(code, type = "METAR", horizon = 24) {
+        // Dummy data with item and value pairs
+        const data =
+          type === "METAR"
+            ? `Visibility: 10km\nWind: 120/12kt\nTemp: 26°C\nClouds: FEW020`
+            : `Period: Next ${horizon} Hours\nWind: 140/10kt\nVisibility: 6.1km\nClouds: SCT030`;
+
+        let horizonHtml = "";
+        if (type === "TAF") {
+          horizonHtml = `<select class="horizon-select" onchange="updateHorizon(this, '${code}')">`;
+          for (let i = 8; i <= 30; i++) {
+            horizonHtml += `<option value="${i}" ${i == horizon ? "selected" : ""}>${i}h</option>`;
+          }
+          horizonHtml += `</select>`;
+        }
+
+        const severityClass = getSeverityClass(code);
+
+        return `
+          <div class="card-header">
+            <div class="airport">${code}</div>
+            <div class="controls">
+              ${horizonHtml}
+              <div class="toggle-group">
+                <button class="toggle-btn ${type === "METAR" ? "active" : ""}" onclick="toggleType(this, '${code}', 'METAR')">METAR</button>
+                <button class="toggle-btn ${type === "TAF" ? "active" : ""}" onclick="toggleType(this, '${code}', 'TAF')">TAF</button>
+              </div>
+              <div class="delete-btn" onclick="revertToPlus(this)">x</div>
+            </div>
+          </div>
+          <div class="label">${type} Data</div>
+          <div class="weather">${data}</div>
+          <div class="status-indicator ${severityClass}" title="Weather Status">⚠️</div>
+        `;
+      }
+
+      function toggleType(btn, code, type) {
+        const card = btn.closest(".card");
+        card.innerHTML = createWeatherContent(code, type);
+      }
+
+      function updateHorizon(select, code) {
+        const card = select.closest(".card");
+        card.innerHTML = createWeatherContent(code, "TAF", select.value);
+      }
+
+      function revertToPlus(btn) {
+        const card = btn.closest(".card");
+        card.classList.add("add-card");
+        card.onclick = () => addAirport(card);
+        card.innerHTML = `<div class="plus">+</div>`;
+      }
+
+      function addAirport(cardElement) {
+        const code = prompt("Enter ICAO Airport Code (e.g. YBBN):");
+        if (!code) return;
+
+        cardElement.classList.remove("add-card");
+        cardElement.onclick = null;
+        cardElement.innerHTML = createWeatherContent(code.toUpperCase());
+      }
+
+      function initDashboard() {
+        const dashboard = document.getElementById("dashboard");
+        dashboard.innerHTML = "";
+
+        initialAirports.forEach((code) => {
+          const card = document.createElement("div");
+          if (code) {
+            card.className = "card";
+            card.innerHTML = createWeatherContent(code);
+          } else {
+            card.className = "card add-card";
+            card.innerHTML = `<div class="plus">+</div>`;
+            card.onclick = () => addAirport(card);
+          }
+          dashboard.appendChild(card);
+        });
+      }
+
+      initDashboard();
+    </script>
+  </body>
+</html>
