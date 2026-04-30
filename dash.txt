@@ -671,3 +671,92 @@
     </script>
   </body>
 </html>
+
+
+
+<?php
+
+// This header tells the browser that the response is JSON.
+header('Content-Type: application/json');
+
+/**
+ * In a real application, you would connect to your database here.
+ *
+ * Example (using PDO):
+ * $pdo = new PDO('mysql:host=localhost;dbname=your_db', 'user', 'pass');
+ *
+ * // Query for favourites
+ * $stmt = $pdo->query("SELECT icao_code FROM user_favourites WHERE user_id = 1");
+ * $favourites = $stmt->fetchAll(PDO::FETCH_COLUMN);
+ *
+ * // Query for past alarms
+ * $stmt = $pdo->query("SELECT metar_string FROM past_alarms WHERE user_id = 1 ORDER BY timestamp DESC LIMIT 5");
+ * $alarms = $stmt->fetchAll(PDO::FETCH_COLUMN);
+ *
+ * // Query for weather data (METAR/TAF) for relevant airports
+ * // This would typically involve fetching from a weather data source
+ * // and parsing it into a structured format.
+ * // For example, if you have a table 'airport_weather' with columns:
+ * // icao_code, type (METAR/TAF), raw_data, display_data
+ * // $stmt = $pdo->query("SELECT icao_code, type, raw_data, display_data FROM airport_weather WHERE icao_code IN ('YBBN', 'YSSY', ...)");
+ * // $weather_results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+ * // Then process $weather_results into the $weatherData structure below.
+ *
+ */
+
+// --- For now, we will use dummy data ---
+$favourites = ["YBBN", "YSSY", "EGLL", "KJFK", "OMDB"];
+$alarms = [
+    "METAR YBBN 230400Z 12012KT 9999 FEW020 26/19 Q1018",
+    "METAR YSSY 230330Z 14010KT 9999 SCT030 24/18 Q1019",
+    "METAR YMML 230300Z 10008KT 8000 -RA BKN015 19/17 Q1020",
+    "METAR YPPH 230230Z 09015G25KT 9999 CLR 30/12 Q1015",
+    "METAR NZAA 230200Z 22005KT 9999 FEW035 21/16 Q1022"
+];
+
+// Dummy weather data for various airports
+$weatherData = [
+    "YBBN" => [
+        "METAR" => [
+            "raw" => "YBBN 230400Z 12012KT 9999 FEW020 26/19 Q1018",
+            "display" => "Visibility: 10km\nWind: 120/12kt\nTemp: 26°C\nClouds: FEW020"
+        ],
+        "TAF" => [
+            "raw" => "TAF YBBN 230400Z 2306/2412 12010KT 9999 FEW030",
+            "display" => "Period: Next 24 Hours\nWind: 140/10kt\nVisibility: 6.1km\nClouds: SCT030"
+        ]
+    ],
+    "YSSY" => [
+        "METAR" => [
+            "raw" => "YSSY 230400Z 14010KT 9999 SCT030 24/18 Q1019",
+            "display" => "Visibility: 10km\nWind: 140/10kt\nTemp: 24°C\nClouds: SCT030"
+        ],
+        "TAF" => [
+            "raw" => "TAF YSSY 230400Z 2306/2412 14010KT 9999 SCT030",
+            "display" => "Period: Next 24 Hours\nWind: 140/10kt\nVisibility: 10km\nClouds: SCT030"
+        ]
+    ],
+    "YMML" => [
+        "METAR" => [
+            "raw" => "YMML 230400Z 10008KT 8000 -RA BKN015 19/17 Q1020",
+            "display" => "Visibility: 8km\nWind: 100/8kt\nTemp: 19°C\nClouds: BKN015"
+        ],
+        "TAF" => [
+            "raw" => "TAF YMML 230400Z 2306/2412 10008KT 8000 -RA BKN015",
+            "display" => "Period: Next 24 Hours\nWind: 100/8kt\nVisibility: 8km\nClouds: BKN015"
+        ]
+    ],
+    "EGLL" => [ /* ... similar structure for EGLL ... */ ],
+    "KJFK" => [ /* ... similar structure for KJFK ... */ ],
+    "OMDB" => [ /* ... similar structure for OMDB ... */ ]
+];
+
+// We package all our data into a single associative array.
+$data = [
+    'favouriteAirports' => $favourites,
+    'pastAlarms' => $alarms,
+    'weatherData' => $weatherData
+];
+
+// Finally, we encode the array into a JSON string and echo it.
+echo json_encode($data);
