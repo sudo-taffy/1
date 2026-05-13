@@ -245,6 +245,12 @@
       .airport {
         font-size: 18px;
         font-weight: 600;
+      }
+
+      .airport-name {
+        font-size: 12px;
+        color: var(--text-light);
+        font-weight: 500;
         margin-bottom: 8px;
       }
 
@@ -253,13 +259,42 @@
         color: var(--text-light);
         text-transform: uppercase;
         margin-bottom: 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .valid-time {
+        font-size: 10px;
+        text-transform: none;
+        font-weight: normal;
       }
 
       .weather {
         font-size: 13px;
         line-height: 1.4;
         font-family: monospace;
-        white-space: pre-line;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .weather-row {
+        display: flex;
+        margin-bottom: 5px;
+      }
+
+      .weather-col {
+        flex: 0 0 50%;
+      }
+
+      .weather-item {
+        margin-bottom: 5px;
+      }
+
+      .weather b {
+        font-weight: 600;
+        color: #344054;
       }
 
       .add-card {
@@ -424,22 +459,72 @@
 
         // --- CONTENT CREATION FUNCTIONS ---
         function createLargeWeatherContent(code, type = "METAR", horizon = 24) {
-          const airportData = allWeatherData[code];
-          let displayData = "No data available.";
+          const airportData = allWeatherData[code] || {};
+          let weatherContent = "No data available.";
           let rawData = "";
+          let airportName = (airportData.METAR && airportData.METAR.name) || "";
+          let validTime = "";
 
-          if (airportData && airportData[type]) {
-            displayData = airportData[type].display;
-            rawData = airportData[type].raw;
-            // For TAF, we might want to dynamically adjust the horizon in the display string
-            // For now, we'll use the fetched display data directly.
+          const weatherInfo = airportData[type];
+          if (weatherInfo) {
+            rawData = weatherInfo.raw || "";
+
+            if (weatherInfo.valid_from && weatherInfo.valid_to) {
+              validTime = `Valid: ${weatherInfo.valid_from} – ${weatherInfo.valid_to}`;
+            }
+
+            if (type === "METAR" && weatherInfo.display_items) {
+              const items = Object.entries(weatherInfo.display_items);
+              const twoColLabels = [
+                "Visibility",
+                "Wind",
+                "Temperature",
+                "Dew Point",
+              ];
+
+              const twoColItems = items.filter(([label]) =>
+                twoColLabels.includes(label),
+              );
+              const oneColItems = items.filter(
+                ([label]) => !twoColLabels.includes(label),
+              );
+
+              let formattedContent = [];
+
+              // Paired items for two-column layout
+              for (let i = 0; i < twoColItems.length; i += 2) {
+                const [label1, value1] = twoColItems[i];
+                const item1 = `<div class="weather-col"><b>${label1}:</b> ${value1}</div>`;
+
+                let item2 = '<div class="weather-col"></div>'; // Placeholder for alignment
+                if (i + 1 < twoColItems.length) {
+                  const [label2, value2] = twoColItems[i + 1];
+                  item2 = `<div class="weather-col"><b>${label2}:</b> ${value2}</div>`;
+                }
+                formattedContent.push(
+                  `<div class="weather-row">${item1}${item2}</div>`,
+                );
+              }
+
+              // Single items for one-column layout
+              oneColItems.forEach(([label, value]) => {
+                formattedContent.push(
+                  `<div class="weather-item"><b>${label}:</b> ${value}</div>`,
+                );
+              });
+
+              weatherContent = formattedContent.join("");
+            } else if (weatherInfo.display) {
+              // Fallback for TAF or old METAR format
+              weatherContent = weatherInfo.display;
+            }
           }
 
           let horizonHtml = "";
           if (type === "TAF") {
             // Note: Horizon selection currently doesn't affect fetched data, only dummy display.
             horizonHtml = `<select class="horizon-select" onchange="updateHorizon(this, '${code}')">`;
-            for (let i = 8; i <= 30; i++) {
+            for (let i = 6; i <= 30; i += 6) {
               horizonHtml += `<option value="${i}" ${i == horizon ? "selected" : ""}>${i}h</option>`;
             }
             horizonHtml += `</select>`;
@@ -447,18 +532,21 @@
 
           return `
             <div class="card-header">
-              <div class="airport">${code}</div>
+              <div>
+                <div class="airport">${code}</div>
+                <div class="airport-name">${airportName}</div>
+              </div>
               <div class="controls">
                 ${horizonHtml}
                 <div class="toggle-group">
                   <button class="toggle-btn ${type === "METAR" ? "active" : ""}" onclick="toggleType(this, '${code}', 'METAR')">METAR</button>
                   <button class="toggle-btn ${type === "TAF" ? "active" : ""}" onclick="toggleType(this, '${code}', 'TAF')">TAF</button>
                 </div>
-                <div class="delete-btn" onclick="clearDashboardSlot(this)">x</div>
+                <div class="delete-btn" onclick="clearDashboardSlot(this)" title="Remove from dashboard">×</div>
               </div>
             </div>
-            <div class="label" title="${rawData}">${type} Data</div>
-            <div class="weather">${displayData}</div>
+            <div class="label" title="${rawData}">${type} Data <span class="valid-time">${validTime}</span></div>
+            <div class="weather">${weatherContent}</div>
           `;
         }
 
@@ -468,8 +556,14 @@
           let rawData = "";
 
           if (airportData && airportData.METAR) {
-            displayData = `Vis: ${airportData.METAR.display.match(/Visibility: (\S+)/)?.[1] || "N/A"}, Wind: ${airportData.METAR.display.match(/Wind: (\S+)/)?.[1] || "N/A"}\nTemp: ${airportData.METAR.display.match(/Temp: (\S+)/)?.[1] || "N/A"}, Clds: ${airportData.METAR.display.match(/Clouds: (\S+)/)?.[1] || "N/A"}`;
-            rawData = airportData.METAR.raw;
+            rawData = airportData.METAR.raw || "";
+            if (airportData.METAR.display_items) {
+              const items = airportData.METAR.display_items;
+              displayData = `Vis: ${items["Visibility"] || "N/A"}, Wind: ${items["Wind"] || "N/A"}\nTemp: ${items["Temperature"] || "N/A"}, Clds: ${items["Clouds"] || "N/A"}`;
+            } else if (airportData.METAR.display) {
+              // Fallback for old format
+              displayData = airportData.METAR.display.replace(/\\n/g, ", ");
+            }
           }
 
           return `
@@ -671,92 +765,3 @@
     </script>
   </body>
 </html>
-
-
-
-<?php
-
-// This header tells the browser that the response is JSON.
-header('Content-Type: application/json');
-
-/**
- * In a real application, you would connect to your database here.
- *
- * Example (using PDO):
- * $pdo = new PDO('mysql:host=localhost;dbname=your_db', 'user', 'pass');
- *
- * // Query for favourites
- * $stmt = $pdo->query("SELECT icao_code FROM user_favourites WHERE user_id = 1");
- * $favourites = $stmt->fetchAll(PDO::FETCH_COLUMN);
- *
- * // Query for past alarms
- * $stmt = $pdo->query("SELECT metar_string FROM past_alarms WHERE user_id = 1 ORDER BY timestamp DESC LIMIT 5");
- * $alarms = $stmt->fetchAll(PDO::FETCH_COLUMN);
- *
- * // Query for weather data (METAR/TAF) for relevant airports
- * // This would typically involve fetching from a weather data source
- * // and parsing it into a structured format.
- * // For example, if you have a table 'airport_weather' with columns:
- * // icao_code, type (METAR/TAF), raw_data, display_data
- * // $stmt = $pdo->query("SELECT icao_code, type, raw_data, display_data FROM airport_weather WHERE icao_code IN ('YBBN', 'YSSY', ...)");
- * // $weather_results = $stmt->fetchAll(PDO::FETCH_ASSOC);
- * // Then process $weather_results into the $weatherData structure below.
- *
- */
-
-// --- For now, we will use dummy data ---
-$favourites = ["YBBN", "YSSY", "EGLL", "KJFK", "OMDB"];
-$alarms = [
-    "METAR YBBN 230400Z 12012KT 9999 FEW020 26/19 Q1018",
-    "METAR YSSY 230330Z 14010KT 9999 SCT030 24/18 Q1019",
-    "METAR YMML 230300Z 10008KT 8000 -RA BKN015 19/17 Q1020",
-    "METAR YPPH 230230Z 09015G25KT 9999 CLR 30/12 Q1015",
-    "METAR NZAA 230200Z 22005KT 9999 FEW035 21/16 Q1022"
-];
-
-// Dummy weather data for various airports
-$weatherData = [
-    "YBBN" => [
-        "METAR" => [
-            "raw" => "YBBN 230400Z 12012KT 9999 FEW020 26/19 Q1018",
-            "display" => "Visibility: 10km\nWind: 120/12kt\nTemp: 26°C\nClouds: FEW020"
-        ],
-        "TAF" => [
-            "raw" => "TAF YBBN 230400Z 2306/2412 12010KT 9999 FEW030",
-            "display" => "Period: Next 24 Hours\nWind: 140/10kt\nVisibility: 6.1km\nClouds: SCT030"
-        ]
-    ],
-    "YSSY" => [
-        "METAR" => [
-            "raw" => "YSSY 230400Z 14010KT 9999 SCT030 24/18 Q1019",
-            "display" => "Visibility: 10km\nWind: 140/10kt\nTemp: 24°C\nClouds: SCT030"
-        ],
-        "TAF" => [
-            "raw" => "TAF YSSY 230400Z 2306/2412 14010KT 9999 SCT030",
-            "display" => "Period: Next 24 Hours\nWind: 140/10kt\nVisibility: 10km\nClouds: SCT030"
-        ]
-    ],
-    "YMML" => [
-        "METAR" => [
-            "raw" => "YMML 230400Z 10008KT 8000 -RA BKN015 19/17 Q1020",
-            "display" => "Visibility: 8km\nWind: 100/8kt\nTemp: 19°C\nClouds: BKN015"
-        ],
-        "TAF" => [
-            "raw" => "TAF YMML 230400Z 2306/2412 10008KT 8000 -RA BKN015",
-            "display" => "Period: Next 24 Hours\nWind: 100/8kt\nVisibility: 8km\nClouds: BKN015"
-        ]
-    ],
-    "EGLL" => [ /* ... similar structure for EGLL ... */ ],
-    "KJFK" => [ /* ... similar structure for KJFK ... */ ],
-    "OMDB" => [ /* ... similar structure for OMDB ... */ ]
-];
-
-// We package all our data into a single associative array.
-$data = [
-    'favouriteAirports' => $favourites,
-    'pastAlarms' => $alarms,
-    'weatherData' => $weatherData
-];
-
-// Finally, we encode the array into a JSON string and echo it.
-echo json_encode($data);
