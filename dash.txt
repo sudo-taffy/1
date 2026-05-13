@@ -763,5 +763,729 @@
         loadInitialData();
       });
     </script>
+
+tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt
+
+
+
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>REACH NG - WxDecode Dashboard</title>
+
+    <style>
+      :root {
+        --light-grey: #f2f4f7;
+        --medium-grey: #e6e9ee;
+        --dark-grey: #d0d5dd;
+        --text-color: #1a1a1a;
+        --text-light: #667085;
+        --status-green: #27ae60;
+        --status-orange: #f39c12;
+        --status-red: #e74c3c;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+        background-color: var(--light-grey);
+        color: var(--text-color);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      header {
+        padding: 20px;
+        text-align: center;
+        font-size: 22px;
+        font-weight: 600;
+        background-color: var(--medium-grey);
+        border-bottom: 1px solid var(--dark-grey);
+        flex-shrink: 0;
+      }
+
+      .main-container {
+        display: flex;
+        flex-grow: 1;
+        overflow: hidden;
+      }
+
+      /* Left Menu Section */
+      .left-menu {
+        flex: 0 0 20%;
+        min-width: 250px;
+        background-color: var(--medium-grey);
+        padding: 20px;
+        border-right: 1px solid var(--dark-grey);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .left-menu h3 {
+        margin: 0 0 10px 0;
+        font-size: 18px;
+        color: #344054;
+        font-weight: 600;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--dark-grey);
+      }
+
+      .airport-adder {
+        display: flex;
+      }
+
+      #airport-input {
+        padding: 8px;
+        border: 1px solid var(--dark-grey);
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        flex-grow: 1;
+        border-radius: 6px 0 0 6px;
+        border-right: none;
+      }
+
+      #add-favourite-btn {
+        padding: 10px;
+        border: none;
+        border-radius: 0 6px 6px 0;
+        background-color: var(--text-light);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      #add-favourite-btn:hover {
+        background-color: #4d5761;
+      }
+
+      .favourites-container {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        min-height: 0;
+      }
+
+      #favourites-list {
+        list-style: none;
+        padding: 5px 2px;
+        margin: 0;
+        overflow-y: auto;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-content: flex-start;
+      }
+
+      #favourites-list li {
+        display: inline-flex;
+        align-items: center;
+        background-color: #dfe3e8;
+        border-radius: 16px;
+        padding: 4px 10px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-light);
+        cursor: default;
+      }
+
+      .remove-fav-btn {
+        cursor: pointer;
+        color: #98a2b3;
+        font-size: 16px;
+        margin-left: 8px;
+        font-weight: bold;
+        transition: color 0.2s ease;
+      }
+      .remove-fav-btn:hover {
+        color: var(--status-red);
+      }
+
+      /* Right Content Section */
+      .right-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 30px;
+        gap: 30px;
+        overflow: hidden;
+      }
+
+      .top-section {
+        flex: 3; /* 60% */
+        min-height: 0;
+      }
+
+      .bottom-section {
+        flex: 2; /* 40% */
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden; /* To clip the scrolling carousel */
+      }
+
+      .bottom-section h4 {
+        margin: 0 0 15px 0;
+        font-size: 18px;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+
+      /* Large Airport Panels */
+      .dashboard {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        height: 100%;
+      }
+
+      .card {
+        background-color: var(--medium-grey);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--dark-grey);
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        transition: all 0.2s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .toggle-group {
+        display: flex;
+        border: 1px solid var(--dark-grey);
+        border-radius: 6px;
+        overflow: hidden;
+        background: var(--light-grey);
+      }
+
+      .toggle-btn {
+        border: none;
+        padding: 4px 8px;
+        font-size: 10px;
+        cursor: pointer;
+        background: transparent;
+        color: var(--text-light);
+        font-weight: 600;
+      }
+
+      .toggle-btn.active {
+        background-color: #667085;
+        color: white;
+      }
+
+      .delete-btn {
+        cursor: pointer;
+        color: #98a2b3;
+        font-size: 18px;
+      }
+
+      .horizon-select {
+        font-size: 10px;
+        border: 1px solid var(--dark-grey);
+        border-radius: 4px;
+        background: white;
+        color: var(--text-light);
+        outline: none;
+      }
+
+      .airport {
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .airport-name {
+        font-size: 12px;
+        color: var(--text-light);
+        font-weight: 500;
+        margin-bottom: 8px;
+      }
+
+      .label {
+        font-size: 11px;
+        color: var(--text-light);
+        text-transform: uppercase;
+        margin-bottom: 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .valid-time {
+        font-size: 10px;
+        text-transform: none;
+        font-weight: normal;
+      }
+
+      .weather {
+        font-size: 13px;
+        line-height: 1.4;
+        font-family: monospace;
+        white-space: pre-line;
+        overflow-y: auto;
+      }
+
+      .weather b {
+        font-weight: 600;
+        color: #344054;
+      }
+
+      .add-card {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        background-color: #dfe3e8;
+      }
+
+      .add-card:hover {
+        background-color: var(--dark-grey);
+      }
+
+      .plus {
+        font-size: 40px;
+        color: var(--text-light);
+      }
+
+      @keyframes marquee {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(-50%);
+        }
+      }
+
+      /* Mini Carousel Panels */
+      .carousel-container {
+        display: flex;
+        gap: 15px;
+        width: fit-content;
+      }
+      .carousel-container.is-scrolling {
+        animation: marquee 40s linear infinite;
+      }
+      .carousel-container.is-scrolling:hover {
+        animation-play-state: paused;
+      }
+
+      .mini-card {
+        background-color: var(--medium-grey);
+        border-radius: 12px;
+        padding: 15px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+        border: 1px solid var(--dark-grey);
+        flex: 0 0 220px; /* Fixed width for carousel items */
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+
+      .mini-card .airport {
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .mini-card .weather {
+        font-size: 11px;
+        margin-top: 8px;
+        font-family: monospace;
+        white-space: pre-line;
+        line-height: 1.5;
+        color: var(--text-light);
+      }
+
+      .delete-fav-btn {
+        position: absolute;
+        top: 5px;
+        right: 8px;
+        cursor: pointer;
+        color: #98a2b3;
+        font-size: 22px;
+        font-weight: 600;
+        transition: color 0.2s;
+      }
+
+      .delete-fav-btn:hover {
+        color: var(--status-red);
+      }
+
+      .past-alarms-container {
+        flex-shrink: 0; /* Prevent this container from shrinking */
+      }
+
+      #past-alarms-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-family: monospace;
+        font-size: 11px;
+        color: var(--text-light);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      #past-alarms-list li {
+        background-color: #dfe3e8;
+        padding: 6px 8px;
+        border-radius: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: help;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>SkyNet Aviation — WxDecode Dashboard</header>
+
+    <div class="main-container">
+      <aside class="left-menu">
+        <div>
+          <h3>Add a Favourite</h3>
+          <div class="airport-adder">
+            <input
+              type="text"
+              id="airport-input"
+              placeholder="Enter ICAO Code (e.g. YBBN)"
+            />
+            <button id="add-favourite-btn">Add Favourite</button>
+          </div>
+        </div>
+        <div class="favourites-container">
+          <h3>Favourites</h3>
+          <ul id="favourites-list">
+            <!-- Favourites will be dynamically inserted here -->
+          </ul>
+        </div>
+        <div class="past-alarms-container">
+          <h3>Past alarms</h3>
+          <ul id="past-alarms-list">
+            <!-- Alarms will be dynamically inserted here from backend -->
+          </ul>
+        </div>
+      </aside>
+
+      <main class="right-content">
+        <div class="top-section">
+          <div class="dashboard" id="dashboard">
+            <!-- Large airport panels will be rendered here -->
+          </div>
+        </div>
+        <div class="bottom-section">
+          <h4>Favourites Overview</h4>
+          <div class="carousel-container" id="favourites-carousel">
+            <!-- Mini condensed panels will be rendered here -->
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // --- STATE ---
+        let favouriteAirports = []; // This will be loaded from API
+        let dashboardSlots = [null, null, null];
+        let allWeatherData = {}; // Stores all fetched METAR/TAF data
+
+        // --- CONTENT CREATION FUNCTIONS ---
+        function createLargeWeatherContent(code, type = "METAR", horizon = 24) {
+          const airportData = allWeatherData[code] || {};
+          let weatherContent = "No data available.";
+          let rawData = "";
+          let airportName = (airportData.METAR && airportData.METAR.name) || "";
+          let validTime = "";
+
+          const weatherInfo = airportData[type];
+          if (weatherInfo) {
+            rawData = weatherInfo.raw || "";
+
+            if (weatherInfo.valid_from && weatherInfo.valid_to) {
+              validTime = `Valid: ${weatherInfo.valid_from} – ${weatherInfo.valid_to}`;
+            }
+
+            if (type === "METAR" && weatherInfo.display_items) {
+              // New structured METAR display
+              weatherContent = Object.entries(weatherInfo.display_items)
+                .map(([label, value]) => `<b>${label}:</b> ${value}`)
+                .join("\n");
+            } else if (weatherInfo.display) {
+              // Fallback for TAF or old METAR format
+              weatherContent = weatherInfo.display;
+            }
+          }
+
+          let horizonHtml = "";
+          if (type === "TAF") {
+            // Note: Horizon selection currently doesn't affect fetched data, only dummy display.
+            horizonHtml = `<select class="horizon-select" onchange="updateHorizon(this, '${code}')">`;
+            for (let i = 6; i <= 30; i += 6) {
+              horizonHtml += `<option value="${i}" ${i == horizon ? "selected" : ""}>${i}h</option>`;
+            }
+            horizonHtml += `</select>`;
+          }
+
+          return `
+            <div class="card-header">
+              <div>
+                <div class="airport">${code}</div>
+                <div class="airport-name">${airportName}</div>
+              </div>
+              <div class="controls">
+                ${horizonHtml}
+                <div class="toggle-group">
+                  <button class="toggle-btn ${type === "METAR" ? "active" : ""}" onclick="toggleType(this, '${code}', 'METAR')">METAR</button>
+                  <button class="toggle-btn ${type === "TAF" ? "active" : ""}" onclick="toggleType(this, '${code}', 'TAF')">TAF</button>
+                </div>
+                <div class="delete-btn" onclick="clearDashboardSlot(this)" title="Remove from dashboard">×</div>
+              </div>
+            </div>
+            <div class="label" title="${rawData}">${type} Data <span class="valid-time">${validTime}</span></div>
+            <div class="weather">${weatherContent}</div>
+          `;
+        }
+
+        function createMiniWeatherContent(code) {
+          const airportData = allWeatherData[code];
+          let displayData = "No data.";
+          let rawData = "";
+
+          if (airportData && airportData.METAR) {
+            rawData = airportData.METAR.raw || "";
+            if (airportData.METAR.display_items) {
+              const items = airportData.METAR.display_items;
+              displayData = `Vis: ${items["Visibility"] || "N/A"}, Wind: ${items["Wind"] || "N/A"}\nTemp: ${items["Temperature"] || "N/A"}, Clds: ${items["Clouds"] || "N/A"}`;
+            } else if (airportData.METAR.display) {
+              // Fallback for old format
+              displayData = airportData.METAR.display.replace(/\\n/g, ", ");
+            }
+          }
+
+          return `
+                <div class="delete-fav-btn" onclick="removeFavourite('${code}')" title="Remove Favourite">×</div>
+                <div class="airport">${code}</div>
+                <div class="weather" title="${rawData}">${displayData}</div>
+            `;
+        }
+
+        // --- RENDER FUNCTIONS ---
+        function renderFavouritesList() {
+          const list = document.getElementById("favourites-list");
+          list.innerHTML = "";
+          favouriteAirports.forEach((code) => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+                <span>${code}</span>
+                <span class="remove-fav-btn" onclick="removeFavourite('${code}')" title="Remove Favourite">×</span>
+              `;
+            list.appendChild(li);
+          });
+        }
+
+        function renderPastAlarms(alarms = []) {
+          const list = document.getElementById("past-alarms-list");
+          list.innerHTML = "";
+          alarms.slice(0, 5).forEach((metar) => {
+            // Ensure max 5 entries
+            const li = document.createElement("li");
+            li.title = metar;
+            li.textContent = metar;
+            list.appendChild(li);
+          });
+        }
+        function renderFavouritesCarousel() {
+          const carousel = document.getElementById("favourites-carousel");
+          // Create a document fragment to build the items off-screen
+          const fragment = document.createDocumentFragment();
+          const items = favouriteAirports.map((code) => {
+            const miniCard = document.createElement("div");
+            miniCard.className = "mini-card";
+            miniCard.innerHTML = createMiniWeatherContent(code);
+            return miniCard;
+          });
+
+          // Append items once to measure
+          items.forEach((item) => fragment.appendChild(item));
+
+          carousel.innerHTML = ""; // Clear previous content
+          carousel.appendChild(fragment); // Append all new items at once
+
+          const isOverflowing =
+            carousel.scrollWidth > carousel.parentElement.clientWidth;
+
+          if (isOverflowing && items.length > 0) {
+            carousel.classList.add("is-scrolling");
+            // If overflowing, clone and append for seamless scroll
+            items
+              .map((item) => item.cloneNode(true))
+              .forEach((item) => carousel.appendChild(item));
+          } else {
+            carousel.classList.remove("is-scrolling");
+          }
+        }
+
+        function renderDashboard() {
+          const dashboard = document.getElementById("dashboard");
+          dashboard.innerHTML = "";
+          dashboardSlots.forEach((code, index) => {
+            const card = document.createElement("div");
+            card.dataset.index = index;
+            if (code) {
+              card.className = "card";
+              card.innerHTML = createLargeWeatherContent(code);
+            } else {
+              card.className = "card add-card";
+              card.innerHTML = `<div class="plus">+</div>`;
+              card.title = "Click to add an airport";
+              card.onclick = () => promptAndAddAirport(index);
+            }
+            dashboard.appendChild(card);
+          });
+        }
+
+        function renderAll(pastAlarms = []) {
+          renderFavouritesList();
+          renderFavouritesCarousel();
+          renderDashboard();
+          renderPastAlarms(pastAlarms);
+        }
+
+        // --- EVENT HANDLERS & ACTIONS (attached to window for inline onclick) ---
+        window.toggleType = function (btn, code, type) {
+          const card = btn.closest(".card");
+          const index = card.dataset.index;
+          card.innerHTML = createLargeWeatherContent(code, type);
+          card.dataset.index = index; // Re-apply dataset
+        };
+
+        window.updateHorizon = function (select, code) {
+          const card = select.closest(".card");
+          const index = card.dataset.index;
+          card.innerHTML = createLargeWeatherContent(code, "TAF", select.value);
+          card.dataset.index = index; // Re-apply dataset
+        };
+
+        window.clearDashboardSlot = function (button) {
+          const card = button.closest(".card");
+          const index = card.dataset.index;
+          if (index !== undefined && dashboardSlots[index] !== null) {
+            dashboardSlots[index] = null;
+            renderDashboard();
+          }
+        };
+
+        window.removeFavourite = function (codeToRemove) {
+          favouriteAirports = favouriteAirports.filter(
+            (code) => code !== codeToRemove,
+          );
+          dashboardSlots = dashboardSlots.map((code) =>
+            code === codeToRemove ? null : code,
+          );
+          renderAll();
+        };
+
+        const promptAndAddAirport = (index) => {
+          const code = prompt("Enter ICAO Airport Code (e.g. YBBN):");
+          if (!code || code.trim().length < 3) {
+            return; // Exit if prompt is cancelled or input is too short
+          }
+          const upperCode = code.trim().toUpperCase();
+
+          if (dashboardSlots.includes(upperCode)) {
+            alert(`${upperCode} is already on the dashboard.`);
+            return;
+          }
+
+          dashboardSlots[index] = upperCode;
+          renderDashboard(); // Only re-render the dashboard
+        };
+
+        // --- INITIALIZATION ---
+        const addFavBtn = document.getElementById("add-favourite-btn");
+        const favInput = document.getElementById("airport-input");
+
+        const addFavouriteAction = () => {
+          const code = favInput.value.trim().toUpperCase();
+          if (code && code.length >= 3) {
+            if (!favouriteAirports.includes(code)) {
+              favouriteAirports.push(code);
+              favouriteAirports.sort();
+              favInput.value = "";
+              renderAll();
+            } else {
+              alert(`${code} is already in your favourites.`);
+            }
+          }
+        };
+
+        addFavBtn.addEventListener("click", addFavouriteAction);
+        favInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            addFavouriteAction();
+          }
+        });
+
+        // --- DATA LOADING ---
+        async function loadInitialData() {
+          try {
+            // Fetch data from our new PHP api script
+            const response = await fetch("api.php");
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+
+            // Update the state with data from the server
+            favouriteAirports = data.favouriteAirports || [];
+            allWeatherData = data.weatherData || {};
+
+            // Render everything with the new data
+            renderAll(data.pastAlarms);
+          } catch (error) {
+            console.error("Could not load initial data:", error);
+            alert(
+              "Error: Could not connect to the server to load data. Please try again later.",
+            );
+            // Render the page in a default empty state
+            renderAll();
+          }
+        }
+
+        // Re-check carousel on window resize
+        window.addEventListener("resize", renderFavouritesCarousel);
+
+        // Load data from the server when the page starts
+        loadInitialData();
+      });
+    </script>
+  </body>
+</html>
+
   </body>
 </html>
